@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173d2b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Plantika">
+<title>Plantika</title>
+<style>
+:root{--bg:#f4f6f1;--card:#fff;--ink:#203328;--muted:#718076;--green:#24583b;--lime:#d9e9c9;--line:#e4e9e1;--warn:#a86c20}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#173d2b;color:white;padding:22px 18px 18px;border-radius:0 0 22px 22px}
+.top{display:flex;justify-content:space-between;align-items:center}.brand{font-size:23px;font-weight:750;letter-spacing:.4px}.sub{color:#d5e4d7;font-size:12px;margin-top:5px}
+main{max-width:760px;margin:auto;padding:16px 14px 92px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:2px}
+.stat,.panel,.plant{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px}
+.stat strong{display:block;font-size:27px;margin-bottom:4px}.stat span,.muted{color:var(--muted);font-size:12px}
+h2{font-size:17px;margin:22px 2px 11px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:#fff;font-weight:650;font-size:13px}
+button.secondary{background:#e8eee5;color:var(--green)}button.danger{background:#f7e9e5;color:#9b3d2d}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:9px 4px calc(9px + env(safe-area-inset-bottom));z-index:5}
+nav button{background:transparent;color:var(--muted);padding:8px 9px;font-size:12px}nav button.active{color:var(--green);background:#edf3e9}
+.view{display:none}.view.active{display:block}
+.plants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.plant{padding:0;overflow:hidden}.plant img{width:100%;height:132px;object-fit:cover;background:#edf1e9}.plant .info{padding:11px}.plant b{display:block;font-size:14px}.plant small{color:var(--muted)}
+form{display:grid;gap:10px}.field{display:grid;gap:5px;font-size:13px;color:var(--muted)}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px;background:white;color:var(--ink);font:inherit}textarea{min-height:76px;resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1}.empty{padding:20px;text-align:center;color:var(--muted);background:#fff;border:1px dashed #cbd6c9;border-radius:14px}
+.logitem{padding:12px 0;border-bottom:1px solid var(--line)}.logitem:last-child{border:0}.tag{display:inline-block;background:#edf3e9;color:var(--green);padding:4px 8px;border-radius:20px;font-size:11px;margin-right:5px}
+#toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:#203328;color:white;padding:10px 14px;border-radius:20px;display:none;z-index:9;font-size:13px}
+@media(min-width:600px){.stats{grid-template-columns:repeat(4,1fr)}.plants{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="top"><div><div class="brand">🌿 PLANTIKA</div><div class="sub">Твоя коллекция растений</div></div><div style="font-size:26px">☘</div></div></header>
+<main>
+<section id="home" class="view active">
+  <h2 style="margin-top:5px">Обзор коллекции</h2>
+  <div class="stats">
+    <div class="stat"><strong id="countPlants">0</strong><span>Всего растений</span></div>
+    <div class="stat"><strong id="countNeeds">0</strong><span>Нужен осмотр*</span></div>
+    <div class="stat"><strong id="countLogs">0</strong><span>Записей ухода</span></div>
+    <div class="stat"><strong id="countSpecies">0</strong><span>Разных видов</span></div>
+  </div>
+  <p class="muted">*Пока это число растений, которым ты вручную назначил статус «Нужен осмотр».</p>
+  <h2>Быстрые действия</h2><div class="actions">
+    <button onclick="showView('addplant')">＋ Добавить растение</button>
+    <button class="secondary" onclick="showView('addlog')">＋ Записать уход</button>
+  </div>
+  <h2>Последние события</h2><div id="recent" class="panel"><div class="empty">Пока нет записей. Добавь первое растение или событие ухода.</div></div>
+  <h2>Резервная копия</h2><div class="panel"><p class="muted">Данные и фотографии хранятся в памяти этого браузера на iPhone. Регулярно сохраняй резервную копию.</p><div class="actions"><button class="secondary" onclick="exportBackup()">Экспортировать копию</button><label class="btn" style="display:inline-block;cursor:pointer">Импортировать копию<input type="file" accept="application/json" onchange="importBackup(event)" hidden></label></div></div>
+</section>
+<section id="collection" class="view"><div class="top" style="margin:6px 2px 14px"><h2 style="margin:0">Мои растения</h2><button onclick="showView('addplant')">＋ Добавить</button></div><div id="plantList" class="plants"></div></section>
+<section id="journal" class="view"><div class="top" style="margin:6px 2px 14px"><h2 style="margin:0">Журнал ухода</h2><button onclick="showView('addlog')">＋ Запись</button></div><div id="logList" class="panel"></div></section>
+<section id="analytics" class="view"><h2 style="margin-top:5px">Аналитика</h2><div class="panel" id="analyticsContent"></div><h2>Состояние коллекции</h2><div class="panel" id="statusContent"></div></section>
+<section id="addplant" class="view"><h2 style="margin-top:5px">Новое растение</h2><div class="panel"><form id="plantForm">
+<label class="field">Название / вид<input name="name" required placeholder="Например, Alocasia Silver Dragon"></label>
+<label class="field">Сорт (необязательно)<input name="variety" placeholder="Сорт или разновидность"></label>
+<div class="row"><label class="field">Статус<select name="status"><option>В коллекции</option><option>Нужен осмотр</option><option>На адаптации</option><option>На укоренении</option></select></label><label class="field">Место<input name="location" placeholder="Полка, стеллаж..."></label></div>
+<label class="field">Фото<input name="photo" type="file" accept="image/*"></label>
+<label class="field">Заметки<textarea name="notes" placeholder="Субстрат, освещение, особенности..."></textarea></label>
+<div class="actions"><button type="submit">Сохранить растение</button><button type="button" class="secondary" onclick="showView('collection')">Отмена</button></div>
+</form></div></section>
+<section id="addlog" class="view"><h2 style="margin-top:5px">Запись ухода</h2><div class="panel"><form id="logForm">
+<label class="field">Растение<select name="plantId" id="logPlant" required></select></label>
+<div class="row"><label class="field">Тип события<select name="type"><option>Полив</option><option>Подкормка</option><option>Пересадка</option><option>Осмотр</option><option>Новый лист</option><option>Размножение</option><option>Другое</option></select></label><label class="field">Дата<input name="date" type="date" required></label></div>
+<label class="field">Заметка<textarea name="note" placeholder="Что сделал или заметил?"></textarea></label>
+<div class="actions"><button type="submit">Сохранить запись</button><button type="button" class="secondary" onclick="showView('journal')">Отмена</button></div>
+</form></div></section>
+<section id="detail" class="view"><div id="detailContent"></div></section>
+</main>
+<nav>
+<button class="active" data-view="home" onclick="showView('home')">⌂<br>Главная</button>
+<button data-view="collection" onclick="showView('collection')">♧<br>Растения</button>
+<button data-view="journal" onclick="showView('journal')">▤<br>Журнал</button>
+<button data-view="analytics" onclick="showView('analytics')">▥<br>Статистика</button>
+</nav><div id="toast"></div>
+<script>
+const DB='plantika-local-v1';let db;
+function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{let d=r.result;d.createObjectStore('plants',{keyPath:'id'});d.createObjectStore('logs',{keyPath:'id'});};r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>rej(r.error)})}
+function store(name,mode='readonly'){return db.transaction(name,mode).objectStore(name)}
+function all(name){return new Promise((res,rej)=>{let r=store(name).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function put(name,obj){return new Promise((res,rej)=>{let r=store(name,'readwrite').put(obj);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function del(name,id){return new Promise((res,rej)=>{let r=store(name,'readwrite').delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+const uid=()=>crypto.randomUUID();const today=()=>new Date().toISOString().slice(0,10);
+function toast(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2200)}
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));refresh();window.scrollTo(0,0)}
+async function refresh(){let [ps,ls]=await Promise.all([all('plants'),all('logs')]);ps.sort((a,b)=>a.name.localeCompare(b.name,'ru'));ls.sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('countPlants').textContent=ps.length;document.getElementById('countNeeds').textContent=ps.filter(p=>p.status==='Нужен осмотр').length;document.getElementById('countLogs').textContent=ls.length;document.getElementById('countSpecies').textContent=new Set(ps.map(p=>p.name.toLowerCase())).size;
+document.getElementById('plantList').innerHTML=ps.length?ps.map(p=>`<article class="plant" onclick="openDetail('${p.id}')">${p.photo?`<img src="${p.photo}">`:'<div style="height:132px;display:grid;place-items:center;background:#edf1e9;font-size:42px">🌱</div>'}<div class="info"><b>${esc(p.name)}</b><small>${esc(p.variety||p.status)}</small></div></article>`).join(''):'<div class="empty" style="grid-column:1/-1">Коллекция пока пуста. Добавь первое растение.</div>';
+let logHtml=ls.slice(0,5).map(l=>`<div class="logitem"><span class="tag">${esc(l.type)}</span><b>${esc(ps.find(p=>p.id===l.plantId)?.name||'Растение удалено')}</b><div class="muted">${esc(l.date)} · ${esc(l.note||'Без заметки')}</div></div>`).join('')||'<div class="muted">Пока нет записей.</div>';document.getElementById('recent').innerHTML=logHtml;document.getElementById('logList').innerHTML=ls.map(l=>`<div class="logitem"><span class="tag">${esc(l.type)}</span><b>${esc(ps.find(p=>p.id===l.plantId)?.name||'Растение удалено')}</b><div class="muted">${esc(l.date)}</div><div>${esc(l.note||'')}</div></div>`).join('')||'<div class="empty">Журнал пока пуст.</div>';
+document.getElementById('logPlant').innerHTML=ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');document.getElementById('analyticsContent').innerHTML=`<p><b>${ps.length}</b> растений в коллекции</p><p><b>${ls.filter(l=>l.type==='Полив').length}</b> записей о поливе</p><p><b>${ls.filter(l=>l.type==='Подкормка').length}</b> подкормок</p><p><b>${ls.filter(l=>l.type==='Пересадка').length}</b> пересадок</p><p><b>${ls.filter(l=>l.type==='Новый лист').length}</b> отметок о новых листьях</p>`;document.getElementById('statusContent').innerHTML=ps.length?ps.map(p=>`<p>${esc(p.name)} — <span class="tag">${esc(p.status)}</span></p>`).join(''):'<div class="muted">Добавь растения, чтобы появилась статистика.</div>'}
+document.getElementById('plantForm').addEventListener('submit',async e=>{e.preventDefault();let f=e.target,photo='';let file=f.photo.files[0];if(file)photo=await new Promise((res,rej)=>{let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});await put('plants',{id:uid(),name:f.name.value.trim(),variety:f.variety.value.trim(),status:f.status.value,location:f.location.value.trim(),notes:f.notes.value.trim(),photo,created:today()});f.reset();toast('Растение сохранено');showView('collection')});
+document.getElementById('logForm').addEventListener('submit',async e=>{e.preventDefault();let f=e.target;if(!f.plantId.value){toast('Сначала добавь растение');return}await put('logs',{id:uid(),plantId:f.plantId.value,type:f.type.value,date:f.date.value,note:f.note.value.trim()});f.reset();f.date.value=today();toast('Запись сохранена');showView('journal')});
+async function openDetail(id){let p=(await all('plants')).find(x=>x.id===id);if(!p)return;let ls=(await all('logs')).filter(l=>l.plantId===id).sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('detailContent').innerHTML=`<button class="secondary" onclick="showView('collection')">← К коллекции</button><h2>${esc(p.name)}</h2>${p.photo?`<img src="${p.photo}" style="width:100%;max-height:280px;object-fit:cover;border-radius:16px">`:''}<div class="panel"><p><b>Сорт:</b> ${esc(p.variety||'—')}</p><p><b>Статус:</b> ${esc(p.status)}</p><p><b>Место:</b> ${esc(p.location||'—')}</p><p><b>Заметки:</b> ${esc(p.notes||'—')}</p><button onclick="quickLog('${p.id}')">＋ Записать уход</button> <button class="danger" onclick="deletePlant('${p.id}')">Удалить</button></div><h2>История растения</h2><div class="panel">${ls.map(l=>`<div class="logitem"><span class="tag">${esc(l.type)}</span>${esc(l.date)}<div>${esc(l.note||'')}</div></div>`).join('')||'<div class="muted">Записей пока нет.</div>'}</div>`;showView('detail')}
+function quickLog(id){showView('addlog');document.getElementById('logPlant').value=id}
+async function deletePlant(id){if(!confirm('Удалить растение и все его записи?'))return;await del('plants',id);for(let l of await all('logs'))if(l.plantId===id)await del('logs',l.id);toast('Растение удалено');showView('collection')}
+async function exportBackup(){let data={app:'Plantika',version:1,exported:new Date().toISOString(),plants:await all('plants'),logs:await all('logs')};let blob=new Blob([JSON.stringify(data)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='plantika-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href);toast('Копия подготовлена')}
+async function importBackup(e){let file=e.target.files[0];if(!file)return;try{let d=JSON.parse(await file.text());if(!Array.isArray(d.plants)||!Array.isArray(d.logs))throw Error();if(!confirm('Импортировать данные? Совпадающие ID будут обновлены.'))return;for(let p of d.plants)await put('plants',p);for(let l of d.logs)await put('logs',l);toast('Резервная копия импортирована');refresh()}catch{alert('Не удалось прочитать эту резервную копию.')}e.target.value=''}
+document.getElementById('logForm').date.value=today();
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(()=>{})); }
+openDB().then(refresh).catch(()=>alert('Не удалось открыть локальное хранилище. Попробуй открыть приложение в Safari.'))
+</script>
+</body></html>
